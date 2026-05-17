@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+const client = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY!,
+  baseURL: "https://api.deepseek.com",
 });
 
 export async function POST(request: Request) {
@@ -25,17 +26,16 @@ export async function POST(request: Request) {
 
 注意：如果用户询问题目答案，请给出明确的参考答案和解析。`;
 
-    const msg = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+    const completion = await client.chat.completions.create({
+      model: "deepseek-chat",
       max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: "user", content: question }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: question },
+      ],
     });
 
-    const answer = msg.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
+    const answer = completion.choices[0]?.message?.content || "";
 
     return NextResponse.json({ answer });
   } catch (error) {
