@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: "https://api.deepseek.com",
-});
+function getClient() {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY 未设置，请在 Netlify 环境变量中添加");
+  }
+  return new OpenAI({
+    apiKey,
+    baseURL: "https://api.deepseek.com",
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +22,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    const client = getClient();
 
     const systemPrompt = `你是一位银行面试辅导专家。你拥有丰富的银行招聘面试经验，涵盖国有六大行、股份制银行、城商行等。
 
@@ -39,10 +47,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ answer });
   } catch (error) {
-    console.error("AI API error:", error);
-    return NextResponse.json(
-      { error: "请求失败，请稍后重试" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "请求失败，请稍后重试";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
